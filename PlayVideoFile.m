@@ -74,7 +74,7 @@ function PlayVideoFile(resultFile)
     handles.hTetrahedronButton = uicontrol(handles.hInteractPanel,'units','normalized','position',[0.49 0.5 0.26 0.4],'style','togglebutton','string','Tetrahedron','enable',onOff{sessionInfo.enrichments.tetrahedron+1},'tag','Tetrahedron','callback',@activityButtons);
     handles.hPerchButton = uicontrol(handles.hInteractPanel,'units','normalized','position',[0.49 0.03 0.26 0.4],'style','togglebutton','string','Perch','enable',onOff{sessionInfo.enrichments.perch+1},'tag','Perch','callback',@activityButtons);
     handles.hHumanButton = uicontrol(handles.hInteractPanel,'units','normalized','position',[0.75 0.5 0.24 0.4],'style','togglebutton','string','Human','tag','Human','enable','off','callback',@activityButtons);
-    handles.hOtherIntButton = uicontrol(handles.hInteractPanel,'units','normalized','position',[0.75 0.03 0.24 0.4],'style','togglebutton','string',sessionInfo.enrichments.otherID,'enable',onOff{sessionInfo.enrichments.other+1},'tag','Other','callback',@activityButtons);
+    handles.hOtherIntButton = uicontrol(handles.hInteractPanel,'units','normalized','position',[0.75 0.03 0.24 0.4],'style','togglebutton','string',sessionInfo.enrichments.otherID,'enable',onOff{sessionInfo.enrichments.other+1},'tag','OtherInt','callback',@activityButtons);
     % Create display window
     [~,tempIndex] = sort([TOTAL.time]);
     TOTAL = TOTAL(tempIndex);
@@ -134,28 +134,52 @@ function keyPress(source,event)
         handles = guidata(hFigure);
     switch event.Key
         case {'1','numpad1'}
+            status = get(handles.hBackButton,'value');
+            set(handles.hBackButton,'value',-status+1)
             activityButtons(handles.hBackButton);
         case {'2','numpad2'}
+            status = get(handles.hPaceButton,'value');
+            set(handles.hPaceButton,'value',-status+1)
             activityButtons(handles.hPaceButton);
         case {'3','numpad3'}
+            status = get(handles.hFreezeButton,'value');
+            set(handles.hFreezeButton,'value',-status+1)
             activityButtons(handles.hFreezeButton);
         case {'4','numpad4'}
+            status = get(handles.hLipButton,'value');
+            set(handles.hLipButton,'value',-status+1)
             activityButtons(handles.hLipButton);
         case {'5','numpad5'}
+            status = get(handles.hTeethButton,'value');
+            set(handles.hTeethButton,'value',-status+1)
             activityButtons(handles.hTeethButton);
         case {'6','numpad6'}
+            status = get(handles.hFearButton,'value');
+            set(handles.hFearButton,'value',-status+1)
             activityButtons(handles.hFearButton);
         case {'7','numpad7'}
+            status = get(handles.hYawnButton,'value');
+            set(handles.hYawnButton,'value',-status+1)
             activityButtons(handles.hYawnButton);
         case {'8','numpad8'}
+            status = get(handles.hScratchButton,'value');
+            set(handles.hScratchButton,'value',-status+1)
             activityButtons(handles.hScratchButton);
         case {'9','numpad9'}
+            status = get(handles.hThreatButton,'value');
+            set(handles.hThreatButton,'value',-status+1)
             activityButtons(handles.hThreatButton);
         case {'divide'}
+            status = get(handles.hGroomButton,'value');
+            set(handles.hGroomButton,'value',-status+1)
             activityButtons(handles.hGroomButton);
         case {'multiply'}
+            status = get(handles.hBiteButton,'value');
+            set(handles.hBiteButton,'value',-status+1)
             activityButtons(handles.hBiteButton);
         case {'subtract'}
+            status = get(handles.hOtherActButton,'value');
+            set(handles.hOtherActButton,'value',-status+1)
             activityButtons(handles.hOtherActButton);
         case 'space'
             TogglePlayPause(handles.hTogglePlayButton);
@@ -592,14 +616,13 @@ function EditInfo(src,event,sessionInfo)
     
     function DoneButton(varargin)
     global SAVEFILE TOTAL LIGHT HUMAN LOCATION ACTIVITY
-    hFigure = findobj('tag', 'VideoPlay');
     choice = questdlg('Are you sure you want to close this window?','Closing window...','Yes','No','No');
     if strcmpi(choice,'No')
         return
     end
     
     save(SAVEFILE,'TOTAL', 'LIGHT', 'HUMAN','LOCATION', 'ACTIVITY','-append')
-    close(hFigure)
+    close all
     
     
 function ReleaseButton(varargin)

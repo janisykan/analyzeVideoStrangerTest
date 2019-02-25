@@ -827,7 +827,7 @@ end
 if get(handles.checkLoadPrev,'value')
     sessionInfo.oldfile = get(handles.editLoadPrev,'string');
     try
-        load(sessionInfo.oldfile,'LIGHT','HUMAN','CANTAB','LOCATION','ACTIVITY','TOTAL','SCREENSHOT')
+        load(sessionInfo.oldfile,'LIGHT','HUMAN','LOCATION','ACTIVITY','TOTAL','SCREENSHOT')
     catch
         errordlg('Please check the name/path of the previous file you''d like to load.')
         return
@@ -844,26 +844,25 @@ else
     HUMAN.time = 0;
     HUMAN.event = 0;
     HUMAN.comment = 'start of file';
-    CANTAB.time = 0;
-    CANTAB.event = 0;
-    CANTAB.comment = 'start of file';
     LOCATION = [];
     ACTIVITY = [];
     [TOTAL(1:3,1).time] = deal(0);
     event = {'off','on'};
     TOTAL(1,1).event = ['light ' event{LIGHT.event+1}];
     TOTAL(2,1).event = 'human out';
-    TOTAL(3,1).event = 'cantab off';
     [TOTAL(1:3,1).comment] = deal('start of file');
     SCREENSHOT = [];
 end
 
 
-save(sessionInfo.resultFile,'sessionInfo','LIGHT','HUMAN','CANTAB','LOCATION','ACTIVITY','TOTAL','SCREENSHOT')
+save(sessionInfo.resultFile,'sessionInfo','LIGHT','HUMAN','LOCATION','ACTIVITY','TOTAL','SCREENSHOT')
 
 PlayVideoFile(sessionInfo.resultFile)
 
 close(handles.figure1)
+if isfield(handles,'hFigure')
+    close(handles.hFigure)
+end
 
 
 
