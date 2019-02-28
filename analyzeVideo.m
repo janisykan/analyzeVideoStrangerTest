@@ -846,11 +846,11 @@ else
     HUMAN.comment = 'start of file';
     LOCATION = [];
     ACTIVITY = [];
-    [TOTAL(1:3,1).time] = deal(0);
+    [TOTAL(1:2,1).time] = deal(0);
     event = {'off','on'};
     TOTAL(1,1).event = ['light ' event{LIGHT.event+1}];
     TOTAL(2,1).event = 'human out';
-    [TOTAL(1:3,1).comment] = deal('start of file');
+    [TOTAL(1:2,1).comment] = deal('start of file');
     SCREENSHOT = [];
 end
 
