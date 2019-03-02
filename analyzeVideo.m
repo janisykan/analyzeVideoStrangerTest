@@ -136,7 +136,7 @@ function buttonOpenVid_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[filename,path] = uigetfile('*.mp4','Choose your video');
+[filename,path] = uigetfile('*.avi','Choose your video');
 
 if ~isequal(filename,0)
     handles.filename = [path,filename];
@@ -832,20 +832,30 @@ if get(handles.checkLoadPrev,'value')
         errordlg('Please check the name/path of the previous file you''d like to load.')
         return
     end
+    try
+        load(sessionInfo.oldfile,'CONDITION')
+    catch
+        errordlg('Missing test condition. Probably made using old version of code. Adding condtion as "other." You might want to check this or start over.')
+        CONDITION.time = 0;
+        CONDITION.event = get(get(handles.hTestRadioGroup,'SelectedObject'),'tag');
+        CONDITION.comment = 'start of file';
+        if size(TOTAL,1)>3
+            TOTAL = [TOTAL(1:3);CONDITION;TOTAL(4:end)];
+        else
+            TOTAL = [TOTAL(1:3);CONDITION];
+        end
+    end
 else
     sessionInfo.oldfile = '';
     LIGHT.time = 0;
-    if sessionInfo.vidHour > 19 || (sessionInfo.vidHour==19 && (sessionInfo.vidMinute>0 || sessionInfo.vidSecond>0)) || sessionInfo.vidHour < 07
-        LIGHT.event = 0;
-    else
-        LIGHT.event = 1;
-    end
+    LIGHT.event = 1;
     LIGHT.comment = 'start of file';
     HUMAN.time = 0;
     HUMAN.event = 0;
     HUMAN.comment = 'start of file';
     LOCATION = [];
     ACTIVITY = [];
+    CONDITION = [];
     [TOTAL(1:2,1).time] = deal(0);
     event = {'off','on'};
     TOTAL(1,1).event = ['light ' event{LIGHT.event+1}];
@@ -855,7 +865,7 @@ else
 end
 
 
-save(sessionInfo.resultFile,'sessionInfo','LIGHT','HUMAN','LOCATION','ACTIVITY','TOTAL','SCREENSHOT')
+save(sessionInfo.resultFile,'sessionInfo','LIGHT','HUMAN','LOCATION','ACTIVITY','CONDITION','TOTAL','SCREENSHOT')
 
 PlayVideoFile(sessionInfo.resultFile)
 

@@ -1,6 +1,6 @@
 function PlayVideoFile(resultFile)
 %filepath,saveFilePath,loadFilePath
-    global PLAYBACKSPEED FILETIME LASTTIME SAVEFILE STARTTIME LIGHT HUMAN LOCATION ACTIVITY TOTAL SCREENSHOT
+    global PLAYBACKSPEED FILETIME LASTTIME SAVEFILE STARTTIME LIGHT HUMAN LOCATION CONDITION ACTIVITY TOTAL SCREENSHOT
     PLAYBACKSPEED = 1;
     FILETIME = 0;
     LASTTIME = 0;
@@ -26,6 +26,12 @@ function PlayVideoFile(resultFile)
     handles.hHumanRadioGroup = uibuttongroup('parent',handles.hFigure,'units','pixels','position',[1080 500 110 40],'title','Human In Room','visible','on','SelectionChangedFcn',@ChangeRadio);
     handles.hHumanYesRadio = uicontrol(handles.hHumanRadioGroup,'units','normalized','position',[0.1 0.05 0.4 0.8],'style','radiobutton','string','Yes','tag','human in');
     handles.hHumanNoRadio = uicontrol(handles.hHumanRadioGroup,'units','normalized','position',[0.6 0.05 0.5 0.8],'style','radiobutton','string','No','tag','human out','Value',1);
+    % Create human test conditions radio buttons (profile, stare, back)
+    handles.hTestRadioGroup = uibuttongroup('parent',handles.hFigure,'units','pixels','position',[1190 500 250 40],'title','Human Position','visible','on','SelectionChangedFcn',@ChangeRadio);
+    handles.hTestProfileRadio = uicontrol(handles.hTestRadioGroup,'units','normalized','position',[0.05 0.05 0.4 0.8],'style','radiobutton','string','Profile','tag','test profile','Enable','off');
+    handles.hTestStareRadio = uicontrol(handles.hTestRadioGroup,'units','normalized','position',[0.3 0.05 0.5 0.8],'style','radiobutton','string','Stare','tag','test stare','Enable','off');
+    handles.hTestBackRadio = uicontrol(handles.hTestRadioGroup,'units','normalized','position',[0.52 0.05 0.5 0.8],'style','radiobutton','string','Back','tag','test back','Enable','off');
+    handles.hTestOtherRadio = uicontrol(handles.hTestRadioGroup,'units','normalized','position',[0.75 0.05 0.5 0.8],'style','radiobutton','string','Other','tag','test other','Value',1,'Enable','off');
     % Create location conditions toggle buttons
     onOff = {'off','on'};
     handles.hLocationToggleGroup = uibuttongroup('parent',handles.hFigure,'units','pixels','position',[970 395 240 100],'title','Location','visible','on','SelectionChangedFcn',@ChangeRadio);
@@ -43,10 +49,19 @@ function PlayVideoFile(resultFile)
         TOTAL = [TOTAL;LOCATION];
         save(SAVEFILE,'LOCATION','TOTAL','-append')
     end
+    if isempty(CONDITION)
+        clear CONDITION
+        CONDITION.time = 0;
+        CONDITION.event = get(get(handles.hTestRadioGroup,'SelectedObject'),'tag');
+        CONDITION.comment = 'start of file';
+        TOTAL = [TOTAL;CONDITION];
+        save(SAVEFILE,'CONDITION','TOTAL','-append')
+    end
     % Create activity buttons
     tempString = sprintf('At least three limbs occupy the back half of the cage\n(farthest from intruder) for more than 45 frames.');
     handles.hBackButton = uicontrol(handles.hFigure, 'position', [970 145 80 60],'style','togglebutton', 'string', '<html><center>Back of<br>Cage (1)','tag','Back', 'TooltipString', tempString, 'callback', @activityButtons);
-    handles.hPaceButton = uicontrol(handles.hFigure, 'position', [1050 145 80 60],'style','togglebutton', 'string', 'Pace (2)','tag','Pace', 'TooltipString', 'Repeated locomotor movement 3 or more times.', 'callback', @activityButtons);
+    tempString = sprintf('Repeated agitated behavior 3 or more times.\nInclude pacing, swaying, swinging, etc.');
+    handles.hRepetitiveButton = uicontrol(handles.hFigure, 'position', [1050 145 80 60],'style','togglebutton', 'string', '<html><center>Repetitive<br>Behavior (2)','tag','Repetitive', 'TooltipString', tempString, 'callback', @activityButtons);
     handles.hFreezeButton = uicontrol(handles.hFigure, 'position', [1130 145 80 60],'style','togglebutton', 'string', 'Freeze (3)','tag','Freeze', 'TooltipString', 'No movement for 60 frames or more.', 'callback', @activityButtons);
     tempString = sprintf('When mouth is puckered and moving quickly\nup and down to produce a smacking sound.\nOften paired with eyebrows and ears back.');
     handles.hLipButton = uicontrol(handles.hFigure, 'position', [970 205 80 60],'style','togglebutton', 'string', 'Lipsmack (4)','tag','Lipsmack', 'TooltipString', tempString, 'callback', @activityButtons);
@@ -84,6 +99,8 @@ function PlayVideoFile(resultFile)
     HUMAN = HUMAN(tempIndex);
     [~,tempIndex] = sort([LOCATION.time]);
     LOCATION = LOCATION(tempIndex);
+    [~,tempIndex] = sort([CONDITION.time]);
+    CONDITION = CONDITION(tempIndex);
     if ~isempty(ACTIVITY)
         [~,tempIndex] = sort([ACTIVITY.time]);
         ACTIVITY = ACTIVITY(tempIndex);
@@ -138,9 +155,9 @@ function keyPress(source,event)
             set(handles.hBackButton,'value',-status+1)
             activityButtons(handles.hBackButton);
         case {'2','numpad2'}
-            status = get(handles.hPaceButton,'value');
-            set(handles.hPaceButton,'value',-status+1)
-            activityButtons(handles.hPaceButton);
+            status = get(handles.hRepetitiveButton,'value');
+            set(handles.hRepetitiveButton,'value',-status+1)
+            activityButtons(handles.hRepetitiveButton);
         case {'3','numpad3'}
             status = get(handles.hFreezeButton,'value');
             set(handles.hFreezeButton,'value',-status+1)
@@ -230,6 +247,11 @@ function MediaPlayerTimeChanged(varargin)
         set(handles.hHumanYesRadio,'value',~isempty(strfind(TOTAL(tempIndex).event,'in')));
         set(handles.hHumanNoRadio,'value',~isempty(strfind(TOTAL(tempIndex).event,'out')));
         set(handles.hHumanButton,'enable',onOff{~isempty(strfind(TOTAL(tempIndex).event,'in'))+1})
+        children = get(handles.hTestRadioGroup,'Children');
+        set(children,'Enable',onOff{~isempty(strfind(TOTAL(tempIndex).event,'in'))+1})
+        tempIndex = find(~cellfun(@isempty, regexp({TOTAL(1:currentIndex).event},'test')),1,'last');
+        tempObj = findobj('tag',TOTAL(tempIndex).event);
+        set(tempObj,'value',1);
         tempIndex = find(~cellfun(@isempty, regexp({TOTAL(1:currentIndex).event},'pen|cage')),1,'last');
         tempObj = findobj('tag',TOTAL(tempIndex).event);
         set(tempObj,'value',1);
@@ -237,9 +259,9 @@ function MediaPlayerTimeChanged(varargin)
             status = strcmpi(TOTAL(currentIndex).event(6:end), 'start');
             tempObj = findobj('tag','Back');
             set(tempObj,'value',status)
-        elseif strfind(TOTAL(currentIndex).event,'Pace')
-            status = strcmpi(TOTAL(currentIndex).event(6:end), 'start');
-            tempObj = findobj('tag','Pace');
+        elseif strfind(TOTAL(currentIndex).event,'Repetitive')
+            status = strcmpi(TOTAL(currentIndex).event(12:end), 'start');
+            tempObj = findobj('tag','Repetitive');
             set(tempObj,'value',status)
         elseif strfind(TOTAL(currentIndex).event,'Freeze')
             status = strcmpi(TOTAL(currentIndex).event(8:end), 'start');
@@ -307,7 +329,7 @@ function MediaPlayerPlaying(varargin)
     tic
     
 function ChangeRadio(varargin)
-    global FILETIME LIGHT HUMAN LOCATION
+    global FILETIME LIGHT HUMAN CONDITION LOCATION
     
     hFigure = findobj('tag', 'VideoPlay');
     handles = guidata(hFigure);
@@ -323,11 +345,32 @@ function ChangeRadio(varargin)
         HUMAN = [HUMAN;Activity];
         [~,tempIndex] = sort([HUMAN.time]);
         HUMAN = HUMAN(tempIndex);
-        if Activity.event == 1;
+        if Activity.event == 1
             set(handles.hHumanButton,'enable','on')
+            children = get(handles.hTestRadioGroup,'Children');
+            set(children,'Enable','on')
         else
+            if get(handles.hHumanButton,'value')
+                set(handles.hHumanButton,'value',0)
+                tempActivity = Activity;
+                tempActivity.event = [get(handles.hHumanButton,'tag'),' end'];
+                saveActivity(tempActivity,selected)
+            end
             set(handles.hHumanButton,'enable','off')
+            if ~get(handles.hTestOtherRadio,'value')
+                set(handles.hTestOtherRadio,'value',1)
+                tempActivity = Activity;
+                tempActivity.event = get(handles.hTestOtherRadio,'tag');
+                saveActivity(tempActivity,selected)
+            end
+            children = get(handles.hTestRadioGroup,'Children');
+            set(children,'Enable','off')
         end
+    elseif isequal(get(varargin{1},'title'),'Human Position')
+        Activity.event = get(selected,'tag');
+        CONDITION = [CONDITION;Activity];
+        [~,tempIndex] = sort([CONDITION.time]);
+        CONDITION = CONDITION(tempIndex);
     else
         Activity.event = get(selected,'tag');
         LOCATION = [LOCATION;Activity];
@@ -355,7 +398,7 @@ function activityButtons(varargin)
     saveActivity(Activity,varargin{1})
             
 function saveActivity(Activity,buttonHandle)
-    global TOTAL LIGHT HUMAN ACTIVITY LOCATION SAVEFILE
+    global TOTAL LIGHT HUMAN ACTIVITY LOCATION CONDITION SAVEFILE
     hFigure = findobj('tag', 'VideoPlay');
     handles = guidata(hFigure);
     TOTAL = [TOTAL;Activity];
@@ -367,7 +410,7 @@ function saveActivity(Activity,buttonHandle)
     times = cellfun(@convertTimes,tempTotal(:,1),'uniformoutput',false);
     forDisp = cellfun(@horzcat,times,spacer,tempTotal(:,2),spacer,tempTotal(:,3),'uniformoutput',false);
     set(handles.hDisplayWindow,'String',forDisp)
-    save(SAVEFILE,'LIGHT','HUMAN','ACTIVITY','LOCATION','TOTAL','-append')
+    save(SAVEFILE,'LIGHT','HUMAN','ACTIVITY','LOCATION','CONDITION','TOTAL','-append')
     set(buttonHandle,'Enable','off');
     drawnow;
     set(buttonHandle,'Enable','on');
@@ -383,7 +426,7 @@ function outputTime = convertTimes(inputTime)
     outputTime = [num2str(currentHour,'%02i') ':' num2str(currentMin,'%02i') ':' num2str(currentSec,'%05.2f')];
     
 function EditActivity(varargin)
-    global TOTAL LIGHT HUMAN LOCATION ACTIVITY
+    global TOTAL LIGHT HUMAN LOCATION CONDITION ACTIVITY
     hFigure = findobj('tag', 'VideoPlay');
     handles = guidata(hFigure);
     selected = get(handles.hDisplayWindow,'value');
@@ -421,6 +464,13 @@ function EditActivity(varargin)
         HUMAN = [HUMAN;tempActivity];
         [~,tempIndex] = sort([HUMAN.time]);
         HUMAN = HUMAN(tempIndex);
+    elseif ~isempty(strfind(TOTAL(selected).event,'test'))
+        tempIndex = find([CONDITION.time] == TOTAL(selected).time);
+        CONDITION(tempIndex) = [];
+        clear tempIndex
+        CONDITION = [CONDITION;Activity];
+        [~,tempIndex] = sort([CONDITION.time]);
+        CONDITION = CONDITION(tempIndex);
     elseif ~isempty(strfind(TOTAL(selected).event,'pen')) || ~isempty(strfind(TOTAL(selected).event,'cage'))
         tempIndex = find([LOCATION.time] == TOTAL(selected).time);
         LOCATION(tempIndex) = [];
@@ -440,7 +490,7 @@ function EditActivity(varargin)
     saveActivity(Activity,varargin{1})
            
 function AddActivity(varargin)
-    global TOTAL LIGHT HUMAN LOCATION ACTIVITY
+    global TOTAL LIGHT HUMAN LOCATION ACTIVITY CONDITION
     hFigure = findobj('tag', 'VideoPlay');
     handles = guidata(hFigure);
     selected = get(handles.hDisplayWindow,'value');
@@ -474,6 +524,10 @@ function AddActivity(varargin)
         HUMAN = [HUMAN;tempActivity];
         [~,tempIndex] = sort([HUMAN.time]);
         HUMAN = HUMAN(tempIndex);
+    elseif ~isempty(strfind(Activity.event,'test'))
+        CONDITION = [CONDITION;Activity];
+        [~,tempIndex] = sort([CONDITION.time]);
+        CONDITION = CONDITION(tempIndex); 
     elseif ~isempty(strfind(Activity.event,'pen')) || ~isempty(strfind(Activity.event,'cage'))
         LOCATION = [LOCATION;Activity];
         [~,tempIndex] = sort([LOCATION.time]);
@@ -486,7 +540,7 @@ function AddActivity(varargin)
     saveActivity(Activity,varargin{1})
  
 function DeleteActivity(varargin)
-    global TOTAL LIGHT HUMAN LOCATION ACTIVITY SAVEFILE
+    global TOTAL LIGHT HUMAN LOCATION ACTIVITY CONDITION SAVEFILE
     hFigure = findobj('tag', 'VideoPlay');
     handles = guidata(hFigure);
     selected = get(handles.hDisplayWindow,'value');
@@ -496,6 +550,9 @@ function DeleteActivity(varargin)
     elseif ~isempty(strfind(TOTAL(selected).event,'human'))
         tempIndex = find([HUMAN.time] == TOTAL(selected).time);
         HUMAN(tempIndex) = [];
+    elseif ~isempty(strfind(TOTAL(selected).event,'test'))
+        tempIndex = find([CONDITION.time] == TOTAL(selected).time);
+        CONDITION(tempIndex) = [];
     elseif ~isempty(strfind(TOTAL(selected).event,'pen')) || ~isempty(strfind(TOTAL(selected).event,'cage'))
         tempIndex = find([LOCATION.time] == TOTAL(selected).time);
         LOCATION(tempIndex) = [];
@@ -511,7 +568,7 @@ function DeleteActivity(varargin)
     times = cellfun(@convertTimes,tempTotal(:,1),'uniformoutput',false);
     forDisp = cellfun(@horzcat,times,spacer,tempTotal(:,2),spacer,tempTotal(:,3),'uniformoutput',false);
     set(handles.hDisplayWindow,'String',forDisp,'Value',1)
-    save(SAVEFILE,'LIGHT','HUMAN','LOCATION','ACTIVITY','TOTAL','-append')
+    save(SAVEFILE,'LIGHT','HUMAN','LOCATION','ACTIVITY','CONDITION','TOTAL','-append')
     
 function PrintScreen(varargin)
     global FILETIME SCREENSHOT SAVEFILE
@@ -615,13 +672,13 @@ function EditInfo(src,event,sessionInfo)
     close(get(src,'parent'))
     
     function DoneButton(varargin)
-    global SAVEFILE TOTAL LIGHT HUMAN LOCATION ACTIVITY
+    global SAVEFILE TOTAL LIGHT HUMAN LOCATION ACTIVITY CONDITION
     choice = questdlg('Are you sure you want to close this window?','Closing window...','Yes','No','No');
     if strcmpi(choice,'No')
         return
     end
     
-    save(SAVEFILE,'TOTAL', 'LIGHT', 'HUMAN','LOCATION', 'ACTIVITY','-append')
+    save(SAVEFILE,'TOTAL', 'LIGHT', 'HUMAN','LOCATION', 'CONDITION','ACTIVITY','-append')
     close all
     
     
